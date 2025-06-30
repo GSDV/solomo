@@ -3,13 +3,15 @@
     "version": "1.0.0",
     "description": "SoLoMo - Grab location instantly!",
     "main": "lib/index.js",
+    "module": "lib/index.esm.js",
     "types": "lib/index.d.ts",
     "files": ["lib"],
     "scripts": {
         "build": "rollup -c",
-        "build:types": "tsc --emitDeclarationOnly",
         "clean": "rm -rf lib",
-        "prepublishOnly": "npm run clean && npm run build && npm run build:types"
+        "lint": "eslint src/**/*.{ts,tsx}",
+        "lint:fix": "eslint src/**/*.{ts,tsx} --fix",
+        "prepublishOnly": "npm run clean && npm run build"
     },
     "author": "Gabriele Scotto di Vettimo <sdvgab@gmail.com>",
     "license": "MIT",
