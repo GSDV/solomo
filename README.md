@@ -99,8 +99,8 @@ function App() {
   return (
     <LocationProvider
       config={{
-        accuracy: Location.Accuracy.High,
-        maxCacheAge: 2 * 60 * 1000, // 2 minutes
+        accuracy: Location.Accuracy.Highest,
+        maxCacheAge: 2 * 60 * 1000,
       }}
     >
       <YourApp />
@@ -115,7 +115,7 @@ function App() {
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `config.accuracy` | `Location.Accuracy` | `Highest` | GPS accuracy level |
+| `config.accuracy` | `Location.Accuracy` | `Balanced` | GPS accuracy level |
 | `config.maxCacheAge` | `number` | `300000` | Cache duration in ms (5 min) |
 
 ### useLocation Hook

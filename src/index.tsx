@@ -68,7 +68,7 @@ export interface LocationContextType {
 
 
 const DEFAULT_CONFIG: LocationConfig = {
-    accuracy: Location.Accuracy.Highest,
+    accuracy: Location.Accuracy.Balanced,
     maxCacheAge: 5 * 60 * 1000
 }
 
