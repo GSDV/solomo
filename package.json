@@ -1,0 +1,54 @@
+{
+    "name": "solomo",
+    "version": "1.0.0",
+    "description": "SoLoMo - Grab location instantly!",
+    "main": "lib/index.js",
+    "types": "lib/index.d.ts",
+    "files": ["lib"],
+    "scripts": {
+        "build": "rollup -c",
+        "build:types": "tsc --emitDeclarationOnly",
+        "clean": "rm -rf lib",
+        "prepublishOnly": "npm run clean && npm run build && npm run build:types"
+    },
+    "author": "Gabriele Scotto di Vettimo <sdvgab@gmail.com>",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/GSDV/solomo.git"
+    },
+    "homepage": "https://github.com/GSDV/solomo#README",
+    "bugs": "https://github.com/GSDV/solomo/issues",
+    "keywords": [
+        "react-native",
+        "location",
+        "gps",
+        "expo",
+        "context",
+        "provider",
+        "geolocation",
+        "permission"
+    ],
+    "peerDependencies": {
+        "react": ">=18.0.0",
+        "react-native": ">=0.70.0",
+        "expo-location": ">=14.0.0"
+    },
+    "devDependencies": {
+        "@types/react": "^19.0.0",
+        "@types/react-native": "^0.73.0",
+        "@typescript-eslint/eslint-plugin": "^6.0.0",
+        "@typescript-eslint/parser": "^6.0.0",
+        "eslint": "^8.0.0",
+        "rollup": "^3.0.0",
+        "@rollup/plugin-typescript": "^11.0.0",
+        "rollup-plugin-dts": "^5.0.0",
+        "typescript": "^5.0.0"
+    },
+    "engines": {
+        "node": ">=16.0.0"
+    },
+    "publishConfig": {
+        "access": "public"
+    }
+}
