@@ -1,11 +1,13 @@
 {
     "name": "solomo",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "SoLoMo - Grab location instantly!",
     "main": "lib/index.js",
     "module": "lib/index.esm.js",
     "types": "lib/index.d.ts",
-    "files": ["lib"],
+    "files": [
+        "lib"
+    ],
     "scripts": {
         "build": "rollup -c",
         "clean": "rm -rf lib",
