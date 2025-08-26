@@ -1,6 +1,6 @@
 # SoLoMo 📍
 
-**So**cial **Lo**cation **Mo**bile - The easiest way to get user location in Expo/React Native apps.
+**So**cial **Lo**cal **Mo**bile - The easiest way to get user location in Expo/React Native apps.
 
 Expo's built-in `Location.getCurrentPositionAsync` can be slow, unpredictable, and requires repetitive permission handling. SoLoMo provides a simple React context that handles permissions, caching, and real-time updates automatically, giving you the most up-to-date location whenever you need it - with type safety!
 
