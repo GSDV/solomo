@@ -4,12 +4,14 @@ import dts from 'rollup-plugin-dts';
 const external = [
     'react',
     'react-native',
-    'expo-location'
+    'expo-location',
+    'expo-maps',
+    'react/jsx-runtime'
 ];
 
 export default [
     {
-        input: 'src/index.tsx',
+        input: 'src/index.ts',
         output: [
         {
             file: 'lib/index.js',
@@ -33,7 +35,7 @@ export default [
         ]
     },
     {
-        input: 'src/index.tsx',
+        input: 'src/index.ts',
         output: {
             file: 'lib/index.d.ts',
             format: 'esm'
