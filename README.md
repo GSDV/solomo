@@ -178,7 +178,7 @@ interface LocationConfig {
 
 ## 📝 License
 
-MIT © [Gabriele Scotto di Vettimo](https://github.com/GSDV)
+MIT
 
 ## 🤝 Contributing
 
