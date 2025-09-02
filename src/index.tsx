@@ -104,6 +104,7 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
     const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastLocationRef = useRef<Location.LocationObject | null>(null);
     const isMountedRef = useRef(true);
+    const isWatchingRef = useRef(false);
 
 
 
@@ -188,7 +189,7 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
 
 
     const startWatching = useCallback(async (options: Partial<LocationConfig> = {}): Promise<void> => {
-        if (!isMountedRef.current || isWatching) return;
+        if (!isMountedRef.current || isWatchingRef.current) return;
         const mergedOptions = { ...config, ...options };
 
         if (!hasPermission) {
@@ -200,6 +201,7 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
         if (locationSubscription.current) locationSubscription.current.remove();
 
         try {
+            isWatchingRef.current = true;
             setIsWatching(true);
             setError(null);
             
@@ -214,9 +216,10 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
             );
         } catch (error) {
             handleError(error, LocationErrorType.POSITION_UNAVAILABLE);
+            isWatchingRef.current = false;
             setIsWatching(false);
         }
-    }, [config, hasPermission, isWatching, requestPermission, handleError]);
+    }, [config, hasPermission, requestPermission, handleError]);
 
 
 
@@ -225,6 +228,7 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
             locationSubscription.current.remove();
             locationSubscription.current = null;
         }
+        isWatchingRef.current = false;
         setIsWatching(false);
     }, []);
 
@@ -234,11 +238,11 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
         setConfig(prevConfig => ({ ...prevConfig, ...newConfig }));
 
         // If currently watching, restart with new config.
-        if (isWatching) {
+        if (isWatchingRef.current) {
             stopWatching();
             startWatching(newConfig);
         }
-    }, [isWatching, stopWatching, startWatching]);
+    }, [stopWatching, startWatching]);
 
 
 
@@ -247,13 +251,13 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
 
         if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
             // App has come to the foreground.
-            if (hasPermission && !isWatching) startWatching();
+            if (hasPermission && !isWatchingRef.current) startWatching();
         } else if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
             // App has gone to the background.
             stopWatching();
         }
         appState.current = nextAppState;
-    }, [hasPermission, isWatching, startWatching, stopWatching]);
+    }, [hasPermission, startWatching, stopWatching]);
 
 
 
@@ -266,28 +270,79 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
                 const { status } = await Location.getForegroundPermissionsAsync();
                 const permissionGranted = status === 'granted';
                 setHasPermission(permissionGranted);
-
+    
                 if (permissionGranted) {
-                    await getCurrentLocation();
-                    await startWatching();
+                    // Inline getCurrentLocation logic
+                    try {
+                        const currentLocation = await Location.getCurrentPositionAsync({ 
+                            accuracy: config.accuracy! 
+                        });
+                        if (isMountedRef.current) {
+                            setLocation(currentLocation);
+                            setLastUpdated(Date.now());
+                            lastLocationRef.current = currentLocation;
+                        }
+                    } catch (error) {
+                        setError({
+                            type: LocationErrorType.POSITION_UNAVAILABLE,
+                            message: 'Failed to get current location',
+                            code: (error as any)?.code
+                        });
+                    }
+    
+                    try {
+                        if (locationSubscription.current) locationSubscription.current.remove();
+                        
+                        isWatchingRef.current = true;
+                        setIsWatching(true);
+                        setError(null);
+                        
+                        locationSubscription.current = await Location.watchPositionAsync(
+                            { accuracy: config.accuracy! },
+                            (newLocation) => {
+                                if (!isMountedRef.current) return;
+                                setLocation(newLocation);
+                                setLastUpdated(Date.now());
+                                lastLocationRef.current = newLocation;
+                            }
+                        );
+                    } catch (error) {
+                        setError({
+                            type: LocationErrorType.POSITION_UNAVAILABLE,
+                            message: 'Failed to start watching location',
+                            code: (error as any)?.code
+                        });
+                        isWatchingRef.current = false;
+                        setIsWatching(false);
+                    }
                 }
             } catch (error) {
-                handleError(error, LocationErrorType.PERMISSION_DENIED);
+                setError({
+                    type: LocationErrorType.PERMISSION_DENIED,
+                    message: 'Permission request failed',
+                    code: (error as any)?.code
+                });
             }
-        }
+        };
 
         initializeLocation();
 
         const subscription = AppState.addEventListener('change', handleAppStateChange);
-  
-        // Cleanup function.
+
         return () => {
             isMountedRef.current = false;
-            stopWatching();
+            if (locationSubscription.current) {
+                locationSubscription.current.remove();
+                locationSubscription.current = null;
+            }
+            isWatchingRef.current = false;
+            setIsWatching(false);
             subscription?.remove();
-            if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+            if (retryTimeoutRef.current) {
+                clearTimeout(retryTimeoutRef.current);
+            }
         };
-    }, []);
+    }, [config]);
 
     const contextValue = useMemo((): LocationContextType => ({
       location,
@@ -347,16 +402,28 @@ export const useCurrentLocation = (options?: Partial<LocationConfig>) => {
 }
 
 
-
 export const useLocationWatcher = (autoStart = true, options?: Partial<LocationConfig>) => {
     const { startWatching, stopWatching, isWatching, location, error } = useLocation();
+    const stableOptions = useMemo(() => options, [JSON.stringify(options)]);
+    const hasInitialized = useRef(false);
 
     useEffect(() => {
-        if (autoStart) {
-            startWatching(options);
-            return () => stopWatching();
+        if (autoStart && !hasInitialized.current) {
+            hasInitialized.current = true;
+            startWatching(stableOptions);
         }
-    }, [autoStart, startWatching, stopWatching, options]);
+        
+        return () => {
+            if (hasInitialized.current) {
+                hasInitialized.current = false;
+                stopWatching();
+            }
+        };
+    }, [autoStart]);
+
+    useEffect(() => {
+        if (!autoStart) hasInitialized.current = false;
+    }, [autoStart]);
 
     return { location, isWatching, error, startWatching, stopWatching };
-}
+};
