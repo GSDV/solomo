@@ -120,7 +120,9 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
 
 
     const requestPermission = useCallback(async (): Promise<boolean> => {
-        if (!isMountedRef.current) return false;
+        if (!isMountedRef.current) {
+            return false;
+        }
 
         try {
             const { status } = await Location.requestForegroundPermissionsAsync();
@@ -128,7 +130,9 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
 
             setHasPermission(granted);
 
-            if (!granted) handleError(new Error('Location permission was denied'), LocationErrorType.PERMISSION_DENIED);
+            if (!granted) {
+                handleError(new Error('Location permission was denied'), LocationErrorType.PERMISSION_DENIED);
+            }
             setError(null);
             return granted;
         } catch (error) {
@@ -140,7 +144,9 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
 
 
     const getCurrentLocation = useCallback(async (options: Partial<LocationConfig> = {}): Promise<LocationData> => {
-        if (!isMountedRef.current) return { granted: false, location: null };
+        if (!isMountedRef.current) {
+            return { granted: false, location: null };
+        }
 
         const mergedOptions = { ...config, ...options };
 
@@ -159,7 +165,9 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
 
         if (!hasPermission) {
             const granted = await requestPermission();
-            if (!granted) return { granted: false, location: null };
+            if (!granted) {
+                return { granted: false, location: null };
+            }
         }
 
         setError(null);
@@ -189,16 +197,22 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
 
 
     const startWatching = useCallback(async (options: Partial<LocationConfig> = {}): Promise<void> => {
-        if (!isMountedRef.current || isWatchingRef.current) return;
+        if (!isMountedRef.current || isWatchingRef.current) {
+            return;
+        }
         const mergedOptions = { ...config, ...options };
 
         if (!hasPermission) {
             const granted = await requestPermission();
-            if (!granted) return;
+            if (!granted) {
+                return;
+            }
         }
 
         // Stop any existing subscription.
-        if (locationSubscription.current) locationSubscription.current.remove();
+        if (locationSubscription.current) {
+            locationSubscription.current.remove();
+        }
 
         try {
             isWatchingRef.current = true;
@@ -208,7 +222,9 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
             locationSubscription.current = await Location.watchPositionAsync(
                 { accuracy: mergedOptions.accuracy! },
                 (newLocation) => {
-                    if (!isMountedRef.current) return;
+                    if (!isMountedRef.current) {
+                        return;
+                    }
                     setLocation(newLocation);
                     setLastUpdated(Date.now());
                     lastLocationRef.current = newLocation;
@@ -247,11 +263,15 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
 
 
     const handleAppStateChange = useCallback((nextAppState: AppStateStatus): void => {
-        if (!isMountedRef.current) return;
+        if (!isMountedRef.current) {
+            return;
+        }
 
         if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
             // App has come to the foreground.
-            if (hasPermission && !isWatchingRef.current) startWatching();
+            if (hasPermission && !isWatchingRef.current) {
+                startWatching();
+            }
         } else if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
             // App has gone to the background.
             stopWatching();
@@ -291,7 +311,9 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
                     }
     
                     try {
-                        if (locationSubscription.current) locationSubscription.current.remove();
+                        if (locationSubscription.current) {
+                            locationSubscription.current.remove();
+                        }
                         
                         isWatchingRef.current = true;
                         setIsWatching(true);
@@ -300,7 +322,9 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
                         locationSubscription.current = await Location.watchPositionAsync(
                             { accuracy: config.accuracy! },
                             (newLocation) => {
-                                if (!isMountedRef.current) return;
+                                if (!isMountedRef.current) {
+                                    return;
+                                }
                                 setLocation(newLocation);
                                 setLastUpdated(Date.now());
                                 lastLocationRef.current = newLocation;
@@ -384,7 +408,7 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
 export const useLocation = (): LocationContextType => {
     const context = useContext(LocationContext);
     if (context === undefined) {
-    throw new Error('useLocation must be used within a LocationProvider');
+        throw new Error('useLocation must be used within a LocationProvider');
     }
     return context;
 }
@@ -422,7 +446,9 @@ export const useLocationWatcher = (autoStart = true, options?: Partial<LocationC
     }, [autoStart]);
 
     useEffect(() => {
-        if (!autoStart) hasInitialized.current = false;
+        if (!autoStart) {
+            hasInitialized.current = false;
+        }
     }, [autoStart]);
 
     return { location, isWatching, error, startWatching, stopWatching };
