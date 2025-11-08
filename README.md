@@ -103,8 +103,10 @@ function App() {
   return (
     <LocationProvider
       config={{
-        accuracy: Location.Accuracy.Highest,
-        maxCacheAge: 2 * 60 * 1000,
+        autoWatch: false,                    // Don't continuously track location
+        fetchInitial: true,                  // Get location once on mount
+        accuracy: Location.Accuracy.Highest, // Use highest accuracy
+        maxCacheAge: 2 * 60 * 60 * 1000,     // Cache for 2 hours
       }}
     >
       <YourApp />
@@ -119,9 +121,10 @@ function App() {
 
 - ✅ **Zero configuration** - Works out of the box
 - ✅ **Smart caching** - Avoid unnecessary GPS calls
-- ✅ **Real-time location updates** - Know exactly where a user is
+- ✅ **Flexible tracking modes** - On-demand or real-time location updates
+- ✅ **Battery efficient** - Configure tracking behavior to minimize battery drain
 - ✅ **Type Safety** - Full TypeScript support
-- ✅ **Configurable** - Set different accuracy levels
+- ✅ **Background/Foreground handling** - Automatically manages app state changes
 
 
 
@@ -131,8 +134,10 @@ function App() {
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `config.accuracy` | `Location.Accuracy` | `Balanced` | GPS accuracy level |
-| `config.maxCacheAge` | `number` | `300000` | Cache duration in ms (5 min) |
+| `config.autoWatch` | `boolean` | `false` | Automatically start watching location on mount. When `false`, location is only fetched on-demand. |
+| `config.fetchInitial` | `boolean` | `true` | Fetch location once on mount (if permission granted). Useful for caching an initial position. |
+| `config.accuracy` | `Location.Accuracy` | `Balanced` | GPS accuracy level. |
+| `config.maxCacheAge` | `number` | `300000` | Cache duration in milliseconds (default: 5 minutes). |
 
 ### useLocation Hook
 
@@ -152,33 +157,48 @@ const {
 ### useCurrentLocation Hook
 
 ```tsx
-const { fetchLocation, error } = useCurrentLocation(options?);
+const {
+  fetchLocation, // Function to fetch current location
+  error          // Any error from last fetch
+} = useCurrentLocation(options?);
 ```
 
 ### useLocationWatcher Hook
 
 ```tsx
 const {
-  location,
-  isWatching,
-  error,
-  startWatching,
-  stopWatching
-} = useLocationWatcher(autoStart?, options?);
+  location,      // Current location
+  isWatching,    // Whether currently watching
+  error,         // Any location error
+  startWatching, // Manually start watching
+  stopWatching   // Manually stop watching
+} = useLocationWatcher(
+    autoStart?,  // Whether to automatically start watching when component mounts
+    options?     // Override provider config for this watcher
+);
 ```
 
-## 🔧 Configuration Options
+## 🔒 Permissions
 
-```tsx
-interface LocationConfig {
-  accuracy?: Location.Accuracy;    // GPS accuracy
-  maxCacheAge?: number;           // Cache duration in milliseconds
-}
-```
+SoLoMo handles location permissions automatically. The library will:
+
+1. Check for existing permissions on mount
+2. Request permissions when needed (e.g., when calling `getCurrentLocation()`)
+3. Provide permission status through the `hasPermission` property
+
+You can also manually request permissions using `requestPermission()`.
+
+## Background Behavior
+
+When your app goes to the background:
+- If watching was **automatically** started (via `autoWatch: true`), it will resume when app returns to foreground
+- If watching was **manually** started (via `startWatching()`), it will also resume when app returns to foreground
+- If watching was manually stopped (via `stopWatching()`), it will NOT resume
+
 
 ## 📝 License
 
-MIT
+MIT © [Gabriele Scotto di Vettimo](https://github.com/GSDV)
 
 ## 🤝 Contributing
 
