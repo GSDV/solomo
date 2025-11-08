@@ -16,6 +16,8 @@ import * as Location from 'expo-location';
 
 
 export interface LocationConfig {
+    autoWatch?: boolean;
+    fetchInitial?: boolean;
     accuracy?: Location.Accuracy;
     maxCacheAge?: number;
 }
@@ -68,6 +70,8 @@ export interface LocationContextType {
 
 
 const DEFAULT_CONFIG: LocationConfig = {
+    autoWatch: false,
+    fetchInitial: true,
     accuracy: Location.Accuracy.Balanced,
     maxCacheAge: 5 * 60 * 1000
 }
@@ -99,12 +103,13 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
     const [hasPermission, setHasPermission] = useState(false);
     const [isWatching, setIsWatching] = useState(false);
 
-    const appState = useRef(AppState.currentState);
+    const appState = useRef<AppStateStatus>(AppState.currentState);
     const locationSubscription = useRef<Location.LocationSubscription | null>(null);
     const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastLocationRef = useRef<Location.LocationObject | null>(null);
-    const isMountedRef = useRef(true);
-    const isWatchingRef = useRef(false);
+    const isMountedRef = useRef<boolean>(true);
+    const isWatchingRef = useRef<boolean>(false);
+    const watchIntentRef = useRef<boolean>(false);
 
 
 
@@ -217,6 +222,7 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
         try {
             isWatchingRef.current = true;
             setIsWatching(true);
+            watchIntentRef.current = true;
             setError(null);
             
             locationSubscription.current = await Location.watchPositionAsync(
@@ -234,6 +240,7 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
             handleError(error, LocationErrorType.POSITION_UNAVAILABLE);
             isWatchingRef.current = false;
             setIsWatching(false);
+            watchIntentRef.current = false;
         }
     }, [config, hasPermission, requestPermission, handleError]);
 
@@ -246,6 +253,7 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
         }
         isWatchingRef.current = false;
         setIsWatching(false);
+        watchIntentRef.current = false;
     }, []);
 
 
@@ -269,12 +277,15 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
 
         if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
             // App has come to the foreground.
-            if (hasPermission && !isWatchingRef.current) {
+            if (hasPermission && !isWatchingRef.current && watchIntentRef.current) {
                 startWatching();
             }
         } else if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
             // App has gone to the background.
-            stopWatching();
+            if (isWatchingRef.current) {
+                watchIntentRef.current = true;
+                stopWatching();
+            }
         }
         appState.current = nextAppState;
     }, [hasPermission, startWatching, stopWatching]);
@@ -291,8 +302,7 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
                 const permissionGranted = status === 'granted';
                 setHasPermission(permissionGranted);
     
-                if (permissionGranted) {
-                    // Inline getCurrentLocation logic
+                if (permissionGranted && config.fetchInitial) {
                     try {
                         const currentLocation = await Location.getCurrentPositionAsync({ 
                             accuracy: config.accuracy! 
@@ -309,7 +319,12 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
                             code: (error as any)?.code
                         });
                     }
-    
+
+                    // If autoWatch is off, do not start watching location.
+                    if (!config.autoWatch) {
+                        return;
+                    }
+
                     try {
                         if (locationSubscription.current) {
                             locationSubscription.current.remove();
@@ -317,6 +332,7 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
                         
                         isWatchingRef.current = true;
                         setIsWatching(true);
+                        watchIntentRef.current = true;
                         setError(null);
                         
                         locationSubscription.current = await Location.watchPositionAsync(
@@ -337,6 +353,7 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
                             code: (error as any)?.code
                         });
                         isWatchingRef.current = false;
+                        watchIntentRef.current = false;
                         setIsWatching(false);
                     }
                 }
