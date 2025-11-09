@@ -1,6 +1,6 @@
 {
     "name": "solomo",
-    "version": "1.0.5",
+    "version": "2.0.0",
     "description": "SoLoMo - Grab location instantly!",
     "main": "lib/index.js",
     "module": "lib/index.esm.js",
