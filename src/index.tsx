@@ -16,19 +16,59 @@ import * as Location from 'expo-location';
 
 
 export interface LocationConfig {
+    /**
+     * Automatically start watching location updates when the provider mounts.
+     * 
+     * Set to `false` for on-demand location fetching only (recommended for battery efficiency).
+     * 
+     * @default false
+     */
     autoWatch?: boolean;
+
+    /**
+     * Fetch the user's location once when the provider mounts (if permission is granted).
+     * 
+     * Useful for caching an initial position without continuous tracking.
+     * 
+     * @default true
+     */
     fetchInitial?: boolean;
+
+    /**
+     * GPS accuracy level for location requests.
+     * 
+     * Higher accuracy uses more battery. Options: `Lowest`, `Low`, `Balanced`, `High`, `Highest`, `BestForNavigation`.
+     * 
+     * @default Location.Accuracy.Balanced
+     */
     accuracy?: Location.Accuracy;
+
+    /**
+     * Maximum age (in milliseconds) for cached location data.
+     * 
+     * If cached location is newer than this, `getCurrentLocation()` will return cached data instead of making a new GPS request.
+     * 
+     * @default 300000 (5 minutes)
+     */
     maxCacheAge?: number;
 }
 
 
 
 export interface LocationData {
+    /** Whether location permission was granted */
     granted: boolean;
+
+    /** The location object, or null if unavailable */
     location: Location.LocationObject | null;
+
+    /** GPS accuracy in meters (if available) */
     accuracy?: number;
+
+    /** Timestamp when location was fetched */
     timestamp?: number;
+
+    /** Whether this location came from cache */
     fromCache?: boolean;
 }
 
