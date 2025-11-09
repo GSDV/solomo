@@ -175,10 +175,11 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
 
             setHasPermission(granted);
 
-            if (!granted) {
+            if (granted) {
+                setError(null);
+            } else {
                 handleError(new Error('Location permission was denied'), LocationErrorType.PERMISSION_DENIED);
             }
-            setError(null);
             return granted;
         } catch (error) {
             handleError(error, LocationErrorType.PERMISSION_DENIED);
@@ -341,30 +342,13 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
                 const { status } = await Location.getForegroundPermissionsAsync();
                 const permissionGranted = status === 'granted';
                 setHasPermission(permissionGranted);
-    
-                if (permissionGranted && config.fetchInitial) {
-                    try {
-                        const currentLocation = await Location.getCurrentPositionAsync({ 
-                            accuracy: config.accuracy! 
-                        });
-                        if (isMountedRef.current) {
-                            setLocation(currentLocation);
-                            setLastUpdated(Date.now());
-                            lastLocationRef.current = currentLocation;
-                        }
-                    } catch (error) {
-                        setError({
-                            type: LocationErrorType.POSITION_UNAVAILABLE,
-                            message: 'Failed to get current location',
-                            code: (error as any)?.code
-                        });
-                    }
 
-                    // If autoWatch is off, do not start watching location.
-                    if (!config.autoWatch) {
-                        return;
-                    }
+                // Do nothing without permission.
+                if (!permissionGranted) {
+                    return;
+                }
 
+                if (config.autoWatch) {
                     try {
                         if (locationSubscription.current) {
                             locationSubscription.current.remove();
@@ -395,6 +379,25 @@ export const LocationProvider = ({ children, config: initialConfig = {} }: Locat
                         isWatchingRef.current = false;
                         watchIntentRef.current = false;
                         setIsWatching(false);
+                    }
+                }
+
+                if (config.fetchInitial) {
+                    try {
+                        const currentLocation = await Location.getCurrentPositionAsync({ 
+                            accuracy: config.accuracy! 
+                        });
+                        if (isMountedRef.current) {
+                            setLocation(currentLocation);
+                            setLastUpdated(Date.now());
+                            lastLocationRef.current = currentLocation;
+                        }
+                    } catch (error) {
+                        setError({
+                            type: LocationErrorType.POSITION_UNAVAILABLE,
+                            message: 'Failed to get current location',
+                            code: (error as any)?.code
+                        });
                     }
                 }
             } catch (error) {
